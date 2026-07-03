@@ -252,6 +252,89 @@ app.post('/v1/scrape/stealth', async (req, res) => {
   }
 });
 
+// ── MCP Registry auth challenge ──────────────────────────────────────────────
+// Serves the ed25519 public key for mcp-publisher HTTP domain verification
+app.get('/.well-known/mcp-registry-auth', (_req, res) => {
+  res.set('Content-Type', 'text/plain');
+  res.send('v=MCPv1; k=ed25519; p=Lb4bZCpB7LF3VAcQ4rojyYHZYRZSZn6y3PrOyEPCnzQ=');
+});
+
+
+// ── Free MCP JSON-RPC endpoint (for Smithery scanner) ───────────────────────
+// Handles MCP protocol initialize + tools/list without payment requirement
+const MCP_TOOLS = [
+  {
+    name: 'get_defi_yields',
+    description: 'Return top DeFi yield pools from DeFiLlama. Params: chain (string), stableOnly (bool), minApy (number), limit (number, max 200). Paid via x402.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        chain:      { type: 'string',  description: 'e.g. Ethereum, Arbitrum, Base' },
+        stableOnly: { type: 'boolean' },
+        minApy:     { type: 'number'  },
+        limit:      { type: 'integer', default: 50, maximum: 200 },
+      },
+    },
+  },
+  {
+    name: 'get_defi_tvl',
+    description: 'Return DeFi protocol TVL with 24h/7d change. Params: chain, category, limit. Paid via x402.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        chain:    { type: 'string' },
+        category: { type: 'string', description: 'e.g. Dexes, Lending, Yield' },
+        limit:    { type: 'integer', default: 50, maximum: 100 },
+      },
+    },
+  },
+  {
+    name: 'get_ai_pricing',
+    description: 'Return LLM API pricing across Anthropic, OpenAI, Google, DeepSeek, Mistral, xAI, Meta. Params: provider (optional). Paid via x402.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        provider: { type: 'string', description: 'Filter by provider name' },
+      },
+    },
+  },
+];
+
+app.post('/mcp', (req, res) => {
+  const body = req.body as { jsonrpc?: string; method?: string; id?: unknown; params?: unknown };
+  const id = body.id ?? null;
+
+  if (body.method === 'initialize') {
+    return res.json({
+      jsonrpc: '2.0', id,
+      result: {
+        protocolVersion: '2024-11-05',
+        capabilities: { tools: {} },
+        serverInfo: { name: '400860 Data API', version: '2.1.0' },
+      },
+    });
+  }
+
+  if (body.method === 'tools/list') {
+    return res.json({ jsonrpc: '2.0', id, result: { tools: MCP_TOOLS } });
+  }
+
+  if (body.method === 'tools/call') {
+    // Redirect to paid endpoint instructions
+    return res.json({
+      jsonrpc: '2.0', id,
+      result: {
+        content: [{
+          type: 'text',
+          text: 'This tool requires x402 payment. Call POST https://api.400860.xyz/v1/mcp/call with x402 payment header. See https://api.400860.xyz/ for pricing.',
+        }],
+      },
+    });
+  }
+
+  return res.status(400).json({ jsonrpc: '2.0', id, error: { code: -32601, message: 'Method not found' } });
+});
+
 // ── Start ───────────────────────────────────────────────────────────────────
 app.listen(config.port, () => {
   console.log(`[400860-radar v2] port=${config.port} payTo=${config.payTo} network=${config.network}`);
