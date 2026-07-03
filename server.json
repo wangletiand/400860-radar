@@ -1,0 +1,76 @@
+{
+  "name": "400860 Data API",
+  "version": "2.1.0",
+  "description": "Real-time DeFi data, AI pricing, and web scraping. Pay-per-call via x402 on Base mainnet.",
+  "homepage": "https://x402.400860.xyz",
+  "repository": "https://github.com/wangletiand/400860-radar",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "transport_type": "http",
+      "url": "https://api.400860.xyz/v1/mcp/call",
+      "headers": {
+        "Content-Type": "application/json"
+      }
+    }
+  ],
+  "tools": [
+    {
+      "name": "get_defi_yields",
+      "description": "Top DeFi yield pools from DeFiLlama. Params: chain, stableOnly, minApy, limit (max 200). Paid /usr/bin/bash.001 via x402.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "chain": {
+            "type": "string",
+            "description": "e.g. Ethereum, Arbitrum, Base, Solana"
+          },
+          "stableOnly": {
+            "type": "boolean"
+          },
+          "minApy": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "integer",
+            "default": 50,
+            "maximum": 200
+          }
+        }
+      }
+    },
+    {
+      "name": "get_defi_tvl",
+      "description": "DeFi protocols ranked by TVL with 24h/7d change. Params: chain, category, limit. Paid /usr/bin/bash.001 via x402.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "chain": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "description": "e.g. Dexes, Lending, Yield"
+          },
+          "limit": {
+            "type": "integer",
+            "default": 50,
+            "maximum": 100
+          }
+        }
+      }
+    },
+    {
+      "name": "get_ai_pricing",
+      "description": "LLM API pricing across Anthropic, OpenAI, Google, DeepSeek, Mistral, xAI, Meta. Params: provider (optional filter). Paid /usr/bin/bash.001 via x402.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}
